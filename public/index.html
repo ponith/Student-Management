@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Poppins', Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      color: #1f2937;
+      background: linear-gradient(-45deg, #667eea, #764ba2, #6BB3F5, #f093fb);
+      background-size: 400% 400%;
+      animation: gradientShift 14s ease infinite;
+      overflow-x: hidden;
+    }
+
+    /* Floating background shapes */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.45;
+      z-index: -1;
+      animation: float 12s ease-in-out infinite;
+    }
+    .blob.one { width: 320px; height: 320px; background: #facc15; top: -80px; left: -80px; }
+    .blob.two { width: 260px; height: 260px; background: #22d3ee; bottom: -60px; right: -60px; animation-delay: -4s; }
+    .blob.three { width: 200px; height: 200px; background: #f472b6; top: 40%; left: 60%; animation-delay: -8s; }
+
+    .container { max-width: 1000px; margin: 0 auto; }
+
+    h1 {
+      text-align: center;
+      font-weight: 700;
+      font-size: 2.4rem;
+      margin: 20px 0 28px;
+      background: linear-gradient(90deg, #fff, #fde68a, #fff);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shine 4s linear infinite, dropIn 0.8s ease both;
+    }
+
+    /* Glass cards */
+    .card {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      margin-bottom: 24px;
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+      transform-style: preserve-3d;
+      animation: fadeUp 0.7s ease both;
+    }
+    .card:hover { box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22); }
+    .card h2 { margin-top: 0; font-weight: 600; color: #4f46e5; }
+
+    /* Form */
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    input {
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 14px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      background: #fff;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+      transform: translateY(-2px);
+    }
+
+    /* Buttons */
+    button {
+      position: relative;
+      overflow: hidden;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s;
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(99, 102, 241, 0.45); }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    #studentForm button { grid-column: span 2; }
+
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      transform: scale(0);
+      animation: rippleAnim 0.6s linear;
+      pointer-events: none;
+    }
+
+    /* Message */
+    #message {
+      text-align: center;
+      font-weight: 600;
+      min-height: 24px;
+      margin: 14px 0 0;
+      opacity: 0;
+    }
+    #message.show { animation: pop 0.45s ease forwards; }
+    #message.success { color: #059669; }
+    #message.error { color: #dc2626; }
+
+    /* Records header */
+    .records-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .records-header h2 { margin: 0; }
+    #searchInput { min-width: 240px; }
+    .count-badge {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .count-badge.bump { animation: bump 0.4s ease; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td { padding: 12px 10px; text-align: left; }
+    th {
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+      color: white;
+      font-weight: 600;
+    }
+    td { border-bottom: 1px solid #eef0f4; }
+    tbody tr {
+      animation: rowIn 0.5s ease both;
+      transition: background 0.25s, transform 0.25s;
+    }
+    tbody tr:hover { background: #eef2ff; transform: scale(1.01); }
+    tbody tr:hover td:first-child { color: #6366f1; font-weight: 600; }
+    .empty-row td { text-align: center; color: #6b7280; padding: 24px; }
+
+    /* Owner section */
+    .owner-wrapper { margin: 30px 0 10px; text-align: center; }
+    .owner-toggle {
+      background: linear-gradient(135deg, #111827, #374151);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+      padding: 12px 24px;
+    }
+    .owner-toggle .arrow { display: inline-block; transition: transform 0.3s ease; }
+    .owner-toggle.open .arrow { transform: rotate(180deg); }
+
+    .owner-details {
+      display: none;
+      margin: 18px auto 0;
+      max-width: 420px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      color: #374151;
+      font-size: 14px;
+      line-height: 1.9;
+    }
+    .owner-details.show { display: block; animation: fadeUp 0.5s ease both; }
+    .owner-details strong { color: #111827; }
+
+    .social-links { display: flex; justify-content: center; margin-top: 14px; }
+    .social-links a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+      color: white;
+      text-decoration: none;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .social-links a:hover {
+      transform: translateY(-4px) scale(1.1) rotate(-6deg);
+      box-shadow: 0 8px 18px rgba(220, 39, 67, 0.5);
+    }
+    .social-links svg { width: 22px; height: 22px; fill: currentColor; }
+
+    /* College card (inside popup) */
+    .college-card { text-align: center; }
+    .college-logo {
+      max-width: 220px;
+      height: auto;
+      margin-bottom: 10px;
+      transition: transform 0.4s ease;
+    }
+    .college-logo:hover { transform: scale(1.05) rotate(-2deg); }
+    .college-card h2 { margin: 6px 0 4px; font-size: 1.2rem; }
+    .college-sub { color: #6b7280; font-size: 13px; margin: 0 0 14px; }
+    .college-info { line-height: 1.9; color: #374151; font-size: 14px; }
+    .college-info a { color: #4f46e5; font-weight: 600; text-decoration: none; }
+    .college-info a:hover { text-decoration: underline; }
+
+    /* Floating college logo (bottom-right), hidden until scrolled to bottom */
+    .college-fab {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      width: 68px;
+      height: 68px;
+      padding: 6px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(120px) scale(0.4);
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .college-fab.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      animation: fabPulse 2.5s ease-in-out infinite;
+    }
+    .college-fab img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 50%;
+    }
+    .college-fab.visible:hover {
+      transform: scale(1.12) rotate(-6deg);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    /* College popup */
+    .college-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1001;
+    }
+    .college-overlay.show { display: flex; animation: fadeIn 0.3s ease; }
+    .college-panel {
+      position: relative;
+      width: 100%;
+      max-width: 620px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: pop 0.4s ease;
+    }
+    .college-close {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 22px;
+      line-height: 1;
+      background: #ef4444;
+      box-shadow: none;
+    }
+
+    /* Shake on error */
+    .shake { animation: shake 0.5s ease; }
+
+    /* Keyframes */
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) translateX(0); }
+      50% { transform: translateY(-30px) translateX(20px); }
+    }
+    @keyframes shine {
+      to { background-position: 200% center; }
+    }
+    @keyframes dropIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes fabPulse {
+      0%, 100% { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); }
+      50% { box-shadow: 0 8px 30px rgba(99, 102, 241, 0.6); }
+    }
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pop {
+      0% { opacity: 0; transform: scale(0.6); }
+      70% { transform: scale(1.08); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes bump {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    @keyframes rippleAnim {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 1.8rem; }
+      #studentForm button { grid-column: auto; }
+      #searchInput { min-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="blob one"></div>
+  <div class="blob two"></div>
+  <div class="blob three"></div>
+
+  <div class="container">
+    <h1>Student Management System</h1>
+
+    <div class="card" id="formCard">
+      <h2>Add Student</h2>
+      <form id="studentForm">
+        <input type="text" id="name" placeholder="Full Name" required>
+        <input type="text" id="rollNumber" placeholder="Roll Number (25304200–25304260)" required>
+        <input type="email" id="email" placeholder="Email">
+        <input type="number" id="age" placeholder="Age" min="1">
+        <input type="text" id="course" placeholder="Course">
+        <button type="submit" id="submitBtn">Add Student</button>
+      </form>
+      <p id="message"></p>
+    </div>
+
+    <div class="card">
+      <div class="records-header">
+        <h2>Student Records</h2>
+        <input type="search" id="searchInput" placeholder="Search name, roll, email...">
+        <span class="count-badge" id="countBadge">0 / 60</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Roll Number</th>
+              <th>Email</th>
+              <th>Age</th>
+              <th>Course</th>
+            </tr>
+          </thead>
+          <tbody id="studentTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="owner-wrapper">
+    <button class="owner-toggle" id="ownerToggle" type="button">
+      Show Owner Details <span class="arrow">▼</span>
+    </button>
+
+    <div class="owner-details" id="ownerDetails">
+      <strong>Owner:</strong> Ponith Kumar<br>
+      <strong>Roll Number:</strong> 25304232<br>
+      <strong>Course:</strong> MCA<br>
+      <strong>Email:</strong> ponithkumar681@gmail.com
+
+      <div class="social-links">
+        <a href="https://www.instagram.com/z1_ponith" target="_blank" rel="noopener noreferrer" title="Instagram" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2.2c3.2 0 3.6 0 4.8.1 3.2.1 4.8 1.7 4.9 4.9.1 1.3.1 1.6.1 4.8s0 3.6-.1 4.8c-.1 3.2-1.7 4.8-4.9 4.9-1.3.1-1.6.1-4.8.1s-3.6 0-4.8-.1c-3.2-.1-4.8-1.7-4.9-4.9C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.8C2.4 4 4 2.4 7.2 2.3 8.4 2.2 8.8 2.2 12 2.2zM12 0C8.7 0 8.3 0 7.1.1 2.7.3.3 2.7.1 7.1 0 8.3 0 8.7 0 12s0 3.7.1 4.9c.2 4.4 2.6 6.8 7 7 1.2.1 1.6.1 4.9.1s3.7 0 4.9-.1c4.4-.2 6.8-2.6 7-7 .1-1.2.1-1.6.1-4.9s0-3.7-.1-4.9c-.2-4.4-2.6-6.8-7-7C15.7 0 15.3 0 12 0zm0 5.8a6.2 6.2 0 1 0 0 12.4 6.2 6.2 0 0 0 0-12.4zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.4-11.8a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <button class="college-fab" id="collegeFab" type="button" aria-label="Show college details" title="College details">
+    <img src="image.png" alt="VISTAS logo">
+  </button>
+
+  <div class="college-overlay" id="collegeOverlay">
+    <div class="card college-card college-panel">
+      <button class="college-close" id="collegeClose" type="button" aria-label="Close">&times;</button>
+      <img src="image.png" alt="VISTAS logo" class="college-logo">
+      <h2>Vels Institute of Science, Technology &amp; Advanced Studies (VISTAS)</h2>
+      <p class="college-sub">Deemed to be University, established under Section 3 of the UGC Act, 1956</p>
+      <div class="college-info">
+        <strong>Address:</strong> PV Vaithiyalingam Rd, Velan Nagar, Krishnapuram, Pallavaram, Tambaram, Tamil Nadu 600117, India<br>
+        <strong>Phone:</strong> +91-9566166777, +91-9962562222<br>
+        <strong>Email:</strong> <a href="mailto:vels@vistas.ac.in">vels@vistas.ac.in</a><br>
+        <strong>Accreditation:</strong> NAAC A++ | UGC Category 1 Institution<br>
+        <strong>Course:</strong> Master of Computer Applications (MCA)<br>
+        <strong>Websites:</strong>
+        <a href="https://velsuniv.ac.in/" target="_blank" rel="noopener noreferrer">velsuniv.ac.in</a> |
+        <a href="https://www.vistas.ac.in" target="_blank" rel="noopener noreferrer">vistas.ac.in</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
